@@ -1,0 +1,10 @@
+{
+  "name": "svg-weathermap-placer",
+  "version": "0.0.1",
+  "description": "Generates SVG weathermaps from a definition.",
+  "main": "index.js",
+  "repository": "https://github.com/RavuAlHemio/svg-weathermap-placer",
+  "author": "Ondřej Hošek <ondra.hosek@gmail.com>",
+  "license": "MIT",
+  "private": false
+}
