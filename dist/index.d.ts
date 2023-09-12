@@ -1,5 +1,8 @@
-import { Gradient } from "./gradients";
-import { LegendSettings } from "./legend";
+import * as constants from "./constants";
+import * as geometry from "./geometry";
+import * as gradients from "./gradients";
+import * as legend from "./legend";
+export { constants, geometry, gradients, legend };
 /**
  * Renders the weathermap specified by the given configuration and values into the given DOM
  * container.
@@ -31,7 +34,7 @@ export declare function setRectangleDimensions(element: SVGRectElement, x: numbe
 export declare class WeathermapRendererState {
     make: SVGElementCreator;
     config: WeathermapConfig;
-    sortedGradient: Gradient;
+    sortedGradient: gradients.Gradient;
     currentValues: MetricValueMap;
     nodeLabelToNode: LabelToNodeMap;
     nodeLinkUriBase: string | null;
@@ -54,7 +57,7 @@ export declare class WeathermapRendererState {
      * @param currentValues - The current values of the relevant metrics used to color the
      * weathermap.
      */
-    constructor(domCreator: SVGElementCreatorDOM, config: WeathermapConfig, sortedGradient: Gradient, currentValues: MetricValueMap);
+    constructor(domCreator: SVGElementCreatorDOM, config: WeathermapConfig, sortedGradient: gradients.Gradient, currentValues: MetricValueMap);
 }
 /**
  * Utility class used to quickly create SVG elements of well-known types.
@@ -268,9 +271,9 @@ export interface WeathermapDefaultConfig {
     /** The default stroke width of edges. Can be overridden within a style. */
     strokeWidth: number;
     /** The gradient defining the background colors of nodes and the stroke colors of edges. */
-    gradient: Gradient;
+    gradient: gradients.Gradient;
     /** Defines the placement and orientation of the legend. */
-    legend: LegendSettings;
+    legend: legend.LegendSettings;
     /** Defines the behavior regarding the generation of clickable links. */
     link: LinkSettings;
     /** Defines the dash array to display if a metric is missing a value. */
@@ -284,4 +287,3 @@ export interface WeathermapDefaultConfig {
 export interface WeathermapConfig extends WeathermapDefaultConfig {
     id: number;
 }
-export {};

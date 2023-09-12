@@ -1,10 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SVGElementCreator = exports.WeathermapRendererState = exports.setRectangleDimensions = exports.renderWeathermapInto = void 0;
-const constants_1 = require("./constants");
-const geometry_1 = require("./geometry");
-const gradients_1 = require("./gradients");
-const legend_1 = require("./legend");
+exports.SVGElementCreator = exports.WeathermapRendererState = exports.setRectangleDimensions = exports.renderWeathermapInto = exports.legend = exports.gradients = exports.geometry = exports.constants = void 0;
+const constants = require("./constants");
+exports.constants = constants;
+const geometry = require("./geometry");
+exports.geometry = geometry;
+const gradients = require("./gradients");
+exports.gradients = gradients;
+const legend = require("./legend");
+exports.legend = legend;
 /**
  * Renders the weathermap specified by the given configuration and values into the given DOM
  * container.
@@ -39,7 +43,7 @@ function renderWeathermapInto(elementCreator, container, config, currentValues, 
     placeNodes(state);
     placeEdges(state);
     placeLabels(state);
-    (0, legend_1.placeLegend)(state.make, config.legend, state.legendGroup, state.defs, sortedGradient, `${config.id}`);
+    legend.placeLegend(state.make, config.legend, state.legendGroup, state.defs, sortedGradient, `${config.id}`);
     return state.svg;
 }
 exports.renderWeathermapInto = renderWeathermapInto;
@@ -120,7 +124,7 @@ function placeNodes(state) {
             // color node by metric
             currentValue = state.currentValues[node.metricName];
             modifyStyle(rect, {
-                "fill": (0, gradients_1.gradientColorForValue)(state.sortedGradient, "fillColor", currentValue),
+                "fill": gradients.gradientColorForValue(state.sortedGradient, "fillColor", currentValue),
             });
         }
         else {
@@ -171,10 +175,10 @@ function placeEdges(state) {
             // warning: screen coordinates (flipped Y axis)!
             let n1N2Angle = Math.atan2(n1Center.y - n2Center.y, n2Center.x - n1Center.x);
             let n2N1Angle = Math.atan2(n2Center.y - n1Center.y, n1Center.x - n2Center.x);
-            let n1N2BendAngle = (0, geometry_1.normalizeAngle)(n1N2Angle + (0, geometry_1.deg2rad)(edge.bendDirection));
-            let n2N1BendAngle = (0, geometry_1.normalizeAngle)(n2N1Angle - (0, geometry_1.deg2rad)(edge.bendDirection));
-            let control1Offset = (0, geometry_1.polarToCartesian)(n1N2BendAngle, edge.bendMagnitude);
-            let control2Offset = (0, geometry_1.polarToCartesian)(n2N1BendAngle, edge.bendMagnitude);
+            let n1N2BendAngle = geometry.normalizeAngle(n1N2Angle + geometry.deg2rad(edge.bendDirection));
+            let n2N1BendAngle = geometry.normalizeAngle(n2N1Angle - geometry.deg2rad(edge.bendDirection));
+            let control1Offset = geometry.polarToCartesian(n1N2BendAngle, edge.bendMagnitude);
+            let control2Offset = geometry.polarToCartesian(n2N1BendAngle, edge.bendMagnitude);
             control1 = {
                 x: (+n1Center.x) + control1Offset.x,
                 y: (+n1Center.y) - control1Offset.y
@@ -186,7 +190,7 @@ function placeEdges(state) {
         }
         if (edge.metric2Name) {
             // two metrics are twice the fun
-            let [, point1COut, point2CIn, point2, point2COut, point3CIn,] = (0, geometry_1.halveCubicBezier)(n1Center, control1, control2, n2Center);
+            let [, point1COut, point2CIn, point2, point2COut, point3CIn,] = geometry.halveCubicBezier(n1Center, control1, control2, n2Center);
             makeAndPlaceEdge(state, singleEdgeGroup, n1Center, point1COut, point2CIn, point2, edge.metricName, edge.styleName, `${edge.node1} \u2192 ${edge.node2}`);
             makeAndPlaceEdge(state, singleEdgeGroup, point2, point2COut, point3CIn, n2Center, edge.metric2Name, edge.styleName, `${edge.node2} \u2192 ${edge.node1}`);
         }
@@ -249,7 +253,7 @@ function makeAndPlaceEdge(state, singleEdgeGroup, start, control1, control2, end
             y: -direction.x
         };
         // calculate unit vector
-        offsetUnitVector = (0, geometry_1.unitVector)(offsetVector);
+        offsetUnitVector = geometry.unitVector(offsetVector);
     }
     let multistrokeGroup = state.make.g();
     singleEdgeGroup.appendChild(multistrokeGroup);
@@ -260,7 +264,7 @@ function makeAndPlaceEdge(state, singleEdgeGroup, start, control1, control2, end
     if (metricName != null && metricName in state.currentValues) {
         currentValue = state.currentValues[metricName];
         modifyStyle(multistrokeGroup, {
-            "stroke": (0, gradients_1.gradientColorForValue)(state.sortedGradient, "strokeColor", currentValue)
+            "stroke": gradients.gradientColorForValue(state.sortedGradient, "strokeColor", currentValue)
         });
         modifyApplyingWeathermapStyle(state, multistrokeGroup, edgeStyle);
     }
@@ -323,7 +327,7 @@ function makeAndPlaceEdge(state, singleEdgeGroup, start, control1, control2, end
         currentOffset += strokeWidth;
     }
     if (state.config.showNumbers) {
-        let midpoint = (0, geometry_1.halveCubicBezier)(start, control1, control2, end)[3];
+        let midpoint = geometry.halveCubicBezier(start, control1, control2, end)[3];
         let valueString = (metricName != null && metricName in state.currentValues)
             ? state.currentValues[metricName].toFixed(2)
             : "?";
@@ -360,7 +364,7 @@ function maybeWrapIntoLink(svgMake, upperGroup, singleObjectGroup, linkUriBase, 
         }
         let aElement = svgMake.a();
         upperGroup.appendChild(aElement);
-        aElement.setAttributeNS(constants_1.xlinkNamespace, "href", objLinkUri);
+        aElement.setAttributeNS(constants.xlinkNamespace, "href", objLinkUri);
         aElement.appendChild(singleObjectGroup);
     }
     else {
@@ -508,24 +512,24 @@ class SVGElementCreator {
     /** Creates a new element creator. */
     constructor(maker) { this.maker = maker; }
     /** Creates a new anchor (`<a>`) element. */
-    a() { return this.maker.createElementNS(constants_1.svgNamespace, "a"); }
+    a() { return this.maker.createElementNS(constants.svgNamespace, "a"); }
     /** Creates a new definitions (`<defs>`) element. */
-    defs() { return this.maker.createElementNS(constants_1.svgNamespace, "defs"); }
+    defs() { return this.maker.createElementNS(constants.svgNamespace, "defs"); }
     /** Creates a new group (`<g>`) element. */
-    g() { return this.maker.createElementNS(constants_1.svgNamespace, "g"); }
+    g() { return this.maker.createElementNS(constants.svgNamespace, "g"); }
     /** Creates a new linear gradient (`<linearGradient>`) element. */
-    linearGradient() { return this.maker.createElementNS(constants_1.svgNamespace, "linearGradient"); }
+    linearGradient() { return this.maker.createElementNS(constants.svgNamespace, "linearGradient"); }
     /** Creates a new path (`<path>`) element. */
-    path() { return this.maker.createElementNS(constants_1.svgNamespace, "path"); }
+    path() { return this.maker.createElementNS(constants.svgNamespace, "path"); }
     /** Creates a new rectangle (`<rect>`) element. */
-    rect() { return this.maker.createElementNS(constants_1.svgNamespace, "rect"); }
+    rect() { return this.maker.createElementNS(constants.svgNamespace, "rect"); }
     /** Creates a new gradient stop (`<stop>`) element. */
-    stop() { return this.maker.createElementNS(constants_1.svgNamespace, "stop"); }
+    stop() { return this.maker.createElementNS(constants.svgNamespace, "stop"); }
     /** Creates a new SVG document (`<svg>`) element. */
-    svg() { return this.maker.createElementNS(constants_1.svgNamespace, "svg"); }
+    svg() { return this.maker.createElementNS(constants.svgNamespace, "svg"); }
     /** Creates a new text (`<text>`) element. */
-    text() { return this.maker.createElementNS(constants_1.svgNamespace, "text"); }
+    text() { return this.maker.createElementNS(constants.svgNamespace, "text"); }
     /** Creates a new title (`<title>`) element. */
-    title() { return this.maker.createElementNS(constants_1.svgNamespace, "title"); }
+    title() { return this.maker.createElementNS(constants.svgNamespace, "title"); }
 }
 exports.SVGElementCreator = SVGElementCreator;

@@ -1,7 +1,9 @@
-import { svgNamespace, xlinkNamespace } from "./constants";
-import { deg2rad, halveCubicBezier, normalizeAngle, Point2D, polarToCartesian, unitVector } from "./geometry";
-import { Gradient, GradientStop, gradientColorForValue } from "./gradients";
-import { LegendSettings, placeLegend } from "./legend";
+import * as constants from "./constants";
+import * as geometry from "./geometry";
+import * as gradients from "./gradients";
+import * as legend from "./legend";
+
+export { constants, geometry, gradients, legend };
 
 
 /**
@@ -23,10 +25,10 @@ export function renderWeathermapInto(
     linkResolver: ((linkSettings: ObjectLinkSettings) => string|null)|null|undefined, addViewBox: boolean = false
 ): SVGSVGElement {
     // sort gradient stops
-    let sortedStops: GradientStop[] = config.gradient.stops
+    let sortedStops: gradients.GradientStop[] = config.gradient.stops
         .slice()
         .sort((l, r) => l.position - r.position);
-    let sortedGradient: Gradient = {
+    let sortedGradient: gradients.Gradient = {
         type: config.gradient.type,
         stops: sortedStops
     };
@@ -45,7 +47,7 @@ export function renderWeathermapInto(
     placeNodes(state);
     placeEdges(state);
     placeLabels(state);
-    placeLegend(state.make, config.legend, state.legendGroup!, state.defs!, sortedGradient, `${config.id}`);
+    legend.placeLegend(state.make, config.legend, state.legendGroup!, state.defs!, sortedGradient, `${config.id}`);
 
     return state.svg!;
 }
@@ -138,7 +140,7 @@ function placeNodes(state: WeathermapRendererState): void {
             // color node by metric
             currentValue = state.currentValues[node.metricName];
             modifyStyle(rect, {
-                "fill": gradientColorForValue(state.sortedGradient, "fillColor", currentValue),
+                "fill": gradients.gradientColorForValue(state.sortedGradient, "fillColor", currentValue),
             });
         } else {
             // no data
@@ -177,28 +179,28 @@ function placeEdges(state: WeathermapRendererState): void {
         let singleEdgeGroup: SVGGElement = state.make.g();
         maybeWrapIntoLink(state.make, state.edgeGroup!, singleEdgeGroup, state.edgeLinkUriBase, edge.linkParams);
 
-        let n1Center: Point2D = {
+        let n1Center: geometry.Point2D = {
             x: (+node1.x) + ((+node1.width) / 2),
             y: (+node1.y) + ((+node1.height) / 2)
         };
-        let n2Center: Point2D = {
+        let n2Center: geometry.Point2D = {
             x: (+node2.x) + ((+node2.width) / 2),
             y: (+node2.y) + ((+node2.height) / 2)
         };
 
         // calculate bend (control points)
-        let control1: Point2D|null = null;
-        let control2: Point2D|null = null;
+        let control1: geometry.Point2D|null = null;
+        let control2: geometry.Point2D|null = null;
         if (edge.bendDirection && edge.bendMagnitude) {
             // warning: screen coordinates (flipped Y axis)!
             let n1N2Angle: number = Math.atan2(n1Center.y - n2Center.y, n2Center.x - n1Center.x);
             let n2N1Angle: number = Math.atan2(n2Center.y - n1Center.y, n1Center.x - n2Center.x);
 
-            let n1N2BendAngle: number = normalizeAngle(n1N2Angle + deg2rad(edge.bendDirection));
-            let n2N1BendAngle: number = normalizeAngle(n2N1Angle - deg2rad(edge.bendDirection));
+            let n1N2BendAngle: number = geometry.normalizeAngle(n1N2Angle + geometry.deg2rad(edge.bendDirection));
+            let n2N1BendAngle: number = geometry.normalizeAngle(n2N1Angle - geometry.deg2rad(edge.bendDirection));
 
-            let control1Offset: Point2D = polarToCartesian(n1N2BendAngle, edge.bendMagnitude);
-            let control2Offset: Point2D = polarToCartesian(n2N1BendAngle, edge.bendMagnitude);
+            let control1Offset: geometry.Point2D = geometry.polarToCartesian(n1N2BendAngle, edge.bendMagnitude);
+            let control2Offset:geometry. Point2D = geometry.polarToCartesian(n2N1BendAngle, edge.bendMagnitude);
 
             control1 = {
                 x: (+n1Center.x) + control1Offset.x,
@@ -215,7 +217,7 @@ function placeEdges(state: WeathermapRendererState): void {
             let
                 [, point1COut, point2CIn, point2, point2COut, point3CIn,]
             =
-                halveCubicBezier(n1Center, control1, control2, n2Center)
+                geometry.halveCubicBezier(n1Center, control1, control2, n2Center)
             ;
 
             makeAndPlaceEdge(
@@ -275,9 +277,11 @@ function placeLabels(state: WeathermapRendererState): void {
  * @param title - The title (mostly realized as tooltip text in browsers) for this edge.
  */
 function makeAndPlaceEdge(
-    state: WeathermapRendererState, singleEdgeGroup: SVGGElement, start: Point2D, control1: Point2D|null,
-    control2: Point2D|null, end: Point2D, metricName: string|null|undefined, edgeStyleName: string|null|undefined,
-    title: string|null|undefined
+    state: WeathermapRendererState, singleEdgeGroup: SVGGElement,
+    start: geometry.Point2D, control1: geometry.Point2D|null, control2: geometry.Point2D|null,
+    end: geometry.Point2D,
+    metricName: string|null|undefined, edgeStyleName: string|null|undefined,
+    title: string|null|undefined,
 ): void {
     let strokeWidths: number[] = [state.config.strokeWidth];
     let edgeStyle: WeathermapStyle|null = getWeathermapStyle(state, edgeStyleName);
@@ -291,24 +295,24 @@ function makeAndPlaceEdge(
         strokeWidths.push(...strokeWidths);
     }
 
-    let offsetUnitVector: Point2D = {x: 0, y: 0};
+    let offsetUnitVector: geometry.Point2D = {x: 0, y: 0};
     if (strokeWidths.length > 1) {
         // calculate an actual offset vector
 
         // get the direction
-        let direction: Point2D = {
+        let direction: geometry.Point2D = {
             x: start.x - end.x,
             y: start.y - end.y
         };
 
         // rotate 90°; that's the offset vector
-        let offsetVector: Point2D = {
+        let offsetVector: geometry.Point2D = {
             x: direction.y,
             y: -direction.x
         };
 
         // calculate unit vector
-        offsetUnitVector = unitVector(offsetVector);
+        offsetUnitVector = geometry.unitVector(offsetVector);
     }
 
     let multistrokeGroup: SVGGElement = state.make.g();
@@ -321,7 +325,7 @@ function makeAndPlaceEdge(
     if (metricName != null && metricName in state.currentValues) {
         currentValue = state.currentValues[metricName];
         modifyStyle(multistrokeGroup, {
-            "stroke": gradientColorForValue(state.sortedGradient, "strokeColor", currentValue)
+            "stroke": gradients.gradientColorForValue(state.sortedGradient, "strokeColor", currentValue)
         });
         modifyApplyingWeathermapStyle(state, multistrokeGroup, edgeStyle);
     } else {
@@ -354,19 +358,19 @@ function makeAndPlaceEdge(
         let xOffset: number = offsetUnitVector.x * (currentOffset + strokeWidth/2.0);
         let yOffset: number = offsetUnitVector.y * (currentOffset + strokeWidth/2.0);
 
-        let strokeStart: Point2D = {
+        let strokeStart: geometry.Point2D = {
             x: start.x + xOffset,
             y: start.y + yOffset,
         };
-        let strokeControl1: Point2D|null = (control1 == null) ? null : {
+        let strokeControl1: geometry.Point2D|null = (control1 == null) ? null : {
             x: control1.x + xOffset,
             y: control1.y + yOffset,
         };
-        let strokeControl2: Point2D|null = (control2 == null) ? null : {
+        let strokeControl2: geometry.Point2D|null = (control2 == null) ? null : {
             x: control2.x + xOffset,
             y: control2.y + yOffset,
         };
-        let strokeEnd: Point2D = {
+        let strokeEnd: geometry.Point2D = {
             x: end.x + xOffset,
             y: end.y + yOffset,
         };
@@ -395,7 +399,7 @@ function makeAndPlaceEdge(
     }
 
     if (state.config.showNumbers) {
-        let midpoint: Point2D = halveCubicBezier(start, control1, control2, end)[3];
+        let midpoint: geometry.Point2D = geometry.halveCubicBezier(start, control1, control2, end)[3];
         let valueString: string = (metricName != null && metricName in state.currentValues)
             ? state.currentValues[metricName].toFixed(2)
             : "?"
@@ -439,7 +443,7 @@ function maybeWrapIntoLink(
 
         let aElement: SVGAElement = svgMake.a();
         upperGroup.appendChild(aElement);
-        aElement.setAttributeNS(xlinkNamespace, "href", objLinkUri);
+        aElement.setAttributeNS(constants.xlinkNamespace, "href", objLinkUri);
 
         aElement.appendChild(singleObjectGroup);
     } else {
@@ -564,7 +568,7 @@ function modifyApplyingWeathermapStyle(
 export class WeathermapRendererState {
     make: SVGElementCreator;
     config: WeathermapConfig;
-    sortedGradient: Gradient;
+    sortedGradient: gradients.Gradient;
     currentValues: MetricValueMap;
     nodeLabelToNode: LabelToNodeMap;
     nodeLinkUriBase: string|null;
@@ -589,7 +593,8 @@ export class WeathermapRendererState {
      * weathermap.
      */
     constructor(
-        domCreator: SVGElementCreatorDOM, config: WeathermapConfig, sortedGradient: Gradient, currentValues: MetricValueMap
+        domCreator: SVGElementCreatorDOM, config: WeathermapConfig,
+        sortedGradient: gradients.Gradient, currentValues: MetricValueMap,
     ) {
         this.make = new SVGElementCreator(domCreator);
         this.config = config;
@@ -625,34 +630,34 @@ export class SVGElementCreator {
     constructor(maker: SVGElementCreatorDOM) { this.maker = maker; }
 
     /** Creates a new anchor (`<a>`) element. */
-    a() { return <SVGAElement>this.maker.createElementNS(svgNamespace, "a"); }
+    a() { return <SVGAElement>this.maker.createElementNS(constants.svgNamespace, "a"); }
 
     /** Creates a new definitions (`<defs>`) element. */
-    defs() { return <SVGDefsElement>this.maker.createElementNS(svgNamespace, "defs"); }
+    defs() { return <SVGDefsElement>this.maker.createElementNS(constants.svgNamespace, "defs"); }
 
     /** Creates a new group (`<g>`) element. */
-    g() { return <SVGGElement>this.maker.createElementNS(svgNamespace, "g"); }
+    g() { return <SVGGElement>this.maker.createElementNS(constants.svgNamespace, "g"); }
 
     /** Creates a new linear gradient (`<linearGradient>`) element. */
-    linearGradient() { return <SVGLinearGradientElement>this.maker.createElementNS(svgNamespace, "linearGradient"); }
+    linearGradient() { return <SVGLinearGradientElement>this.maker.createElementNS(constants.svgNamespace, "linearGradient"); }
 
     /** Creates a new path (`<path>`) element. */
-    path() { return <SVGPathElement>this.maker.createElementNS(svgNamespace, "path"); }
+    path() { return <SVGPathElement>this.maker.createElementNS(constants.svgNamespace, "path"); }
 
     /** Creates a new rectangle (`<rect>`) element. */
-    rect() { return <SVGRectElement>this.maker.createElementNS(svgNamespace, "rect"); }
+    rect() { return <SVGRectElement>this.maker.createElementNS(constants.svgNamespace, "rect"); }
 
     /** Creates a new gradient stop (`<stop>`) element. */
-    stop() { return <SVGStopElement>this.maker.createElementNS(svgNamespace, "stop"); }
+    stop() { return <SVGStopElement>this.maker.createElementNS(constants.svgNamespace, "stop"); }
 
     /** Creates a new SVG document (`<svg>`) element. */
-    svg() { return <SVGSVGElement>this.maker.createElementNS(svgNamespace, "svg"); }
+    svg() { return <SVGSVGElement>this.maker.createElementNS(constants.svgNamespace, "svg"); }
 
     /** Creates a new text (`<text>`) element. */
-    text() { return <SVGTextElement>this.maker.createElementNS(svgNamespace, "text"); }
+    text() { return <SVGTextElement>this.maker.createElementNS(constants.svgNamespace, "text"); }
 
     /** Creates a new title (`<title>`) element. */
-    title() { return <SVGTitleElement>this.maker.createElementNS(svgNamespace, "title"); }
+    title() { return <SVGTitleElement>this.maker.createElementNS(constants.svgNamespace, "title"); }
 }
 
 /**
@@ -870,10 +875,10 @@ export interface WeathermapDefaultConfig {
     strokeWidth: number;
 
     /** The gradient defining the background colors of nodes and the stroke colors of edges. */
-    gradient: Gradient;
+    gradient: gradients.Gradient;
 
     /** Defines the placement and orientation of the legend. */
-    legend: LegendSettings;
+    legend: legend.LegendSettings;
 
     /** Defines the behavior regarding the generation of clickable links. */
     link: LinkSettings;
