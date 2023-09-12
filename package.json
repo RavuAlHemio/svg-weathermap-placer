@@ -2,7 +2,8 @@
   "name": "svg-weathermap-placer",
   "version": "0.0.1",
   "description": "Generates SVG weathermaps from a definition.",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RavuAlHemio/svg-weathermap-placer.git"

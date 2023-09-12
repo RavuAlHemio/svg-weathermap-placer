@@ -3,6 +3,7 @@
     "module": "CommonJS",
     "target": "ES6",
     "outDir": "./dist",
+    "declaration": true,
     "alwaysStrict": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitAny": true,
