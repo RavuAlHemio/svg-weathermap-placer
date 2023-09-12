@@ -1,6 +1,6 @@
 {
   "name": "svg-weathermap-placer",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Generates SVG weathermaps from a definition.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
